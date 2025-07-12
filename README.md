@@ -57,22 +57,21 @@ The dataset used for the word-box detection task is the [DocBank dataset](https:
 
 Annotations are based on 12 labels, which correspond to each area of the document layout:
 
-![Alt text](https://github.com/mau-arrieta/Doc-Anonymizer/blob/main/images/General%20Pipeline%20Concept.png)
+![Alt text](https://github.com/mau-arrieta/Doc-Anonymizer/blob/main/images/docbankLayout.png)
 
 
 These labels are then used to classify the annotations into these 12 classes. This data along with the bounding box pixel coordinates are included in the annotation files. 
 
 
-![Alt text](https://github.com/mau-arrieta/Doc-Anonymizer/blob/main/images/General%20Pipeline%20Concept.png)
+![Alt text](https://github.com/mau-arrieta/Doc-Anonymizer/blob/main/images/docbankAnnotations.png)
 
 
 The pixel coordinates for these bounding boxes is crucial for the project, as they determine wether the model is going to learn valuable information or if it's simply going to underfit for our task. According to [Docbank's official github](https://github.com/doc-analysis/DocBank/tree/master), these coordinates were normalized to 1000xx1000 grid, so we use the same normalization to maintain coherence with the dataset.
 
-![Alt text](https://github.com/mau-arrieta/Doc-Anonymizer/blob/main/images/General%20Pipeline%20Concept.png)
 
 A visualization of the ground-truth bounding boxes with their correct normalization is shown next: 
 
-![Alt text](https://github.com/mau-arrieta/Doc-Anonymizer/blob/main/images/General%20Pipeline%20Concept.png)
+![Alt text](https://github.com/mau-arrieta/Doc-Anonymizer/blob/main/images/ground-truth-labels.png)
 
 
 The annotations included tokens our model didn't need to learn for this task (symbols, formatting sequences), so we filtered our annotation files by matching a REGEX which left us only those tokens that included words longer (or equal to) three letters, and that were made up of letters in the english alphabet (including those with hyphens and apostrophes).
