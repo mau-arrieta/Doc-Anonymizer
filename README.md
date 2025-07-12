@@ -16,7 +16,6 @@ Table of Contents
   * [How to Run](#how-to-run)
 
 
-=================
 
 ## MOTIVATION
 
@@ -37,7 +36,7 @@ The proposal consists of four main modules, integrated into a pipeline that uses
   4.Blurring: With the set of coordinates provided from the computer vision module, and the classification done by the NLP module, this module is in charge of blurring the words classified as sensitive in the original image.
   
 A sample of the planned architecture is shown here:
-![Alt text](images/General Pipeline Concept.png)
+![Alt text](https://github.com/mau-arrieta/Doc-Anonymizer/blob/main/images/General%20Pipeline%20Concept.png)
 
 
 
