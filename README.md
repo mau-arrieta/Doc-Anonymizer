@@ -89,7 +89,9 @@ The whole dataset was approximately 50gb, our model used 2.4% of it for fine-tun
 
 Runnning inference on the test portion of the dataset, it's possible to visually examine the results of the model. 
 
-<img width="557" height="657" alt="image" src="https://github.com/user-attachments/assets/cce7e4e3-2406-4612-9d8d-d04adcb72472" />
+
+<img width="563" height="616" alt="image" src="https://github.com/user-attachments/assets/bdd8ec78-da14-4d72-a08f-d9465492c3d0" />
+
 
 The  bounding boxes are marked in red, and there are 109 of the total 200 predictions that have a confidence score over 0.7 or 70%. The scores represent the model’s estimated confidence that a given bounding box contains a valid object (excluding background). In the project's use case, this indicates that the box contains text. These values are derived from the classification head of the object detection model, which computes a probability distribution over object classes using a softmax layer. These predictions are then used to create the image crops, which are fed into the OCR model. An example of the cropped words list is shown next:
 
@@ -100,6 +102,7 @@ The  bounding boxes are marked in red, and there are 109 of the total 200 predic
 ### Conclusions
 
 In this module of the project, we explored the effectiveness of fine-tuning a pre-trained Faster R-CNN model for word-level text detection in document images. Despite using only a small portion of the full dataset, the model successfully learned to identify and localize word regions with a high degree of confidence, even in visually dense and varied layouts. By carefully selecting and preprocessing the data, we ensured that the model focused on relevant content, which improved the quality of the extracted crops for downstream OCR. The results support our initial hypothesis and show that adapting a general-purpose detection model to a specialized task like this is not only feasible, but also highly effective when guided by the right data and design choices.
+
 
 ## OPTICAL CHARACTER RECOGNITION
 
@@ -178,7 +181,7 @@ The attention layer is followed by a sequence of dense layers, and the model is 
 
 ### Metrics
 
-#### Character Error Raet (CER)
+#### Character Error Rate (CER)
 
 CER is calculated based on the concept of Levenshtein distance, which counts the minimum number of character-level operations required to transform the ground truth text (also called the reference text) into the OCR output.
 It is represented by the formula:
