@@ -85,6 +85,12 @@ The whole dataset was approximately 50gb, our model used 2.4% of it for fine-tun
 
 ### Metrics
 
+<img width="1382" height="634" alt="image" src="https://github.com/user-attachments/assets/0891e3b8-ff03-482e-9c2a-172a01bb5790" />
+
+
+<img width="1382" height="634" alt="image" src="https://github.com/user-attachments/assets/01123a16-a728-43df-9440-a2439e30eac2" />
+
+
 ### Results 
 
 Runnning inference on the test portion of the dataset, it's possible to visually examine the results of the model. 
