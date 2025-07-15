@@ -1,5 +1,5 @@
 # DOCUMENT ANONYMIZATION
-Final project for the 2025 Postgraduate course on Artificial Intelligence with Deep Learning, UPC School, proposed by **Mauricio Arrieta**, **Adrià Buil**, **Xavi Rodríguez** and **Antoni Jordi Noguera**. 
+Final project for the 2025 Postgraduate course on Artificial Intelligence with Deep Learning, UPC School, proposed by **Mauricio Arrieta**, **Adrià Buil**, **Xavi Rodríguez de la Rubia** and **Antoni Jordi Noguera**. 
 
 Advised by **Pol Caselles**.
 
