@@ -136,9 +136,13 @@ We used MultiScaleRoIAlign on 4 levels, which combines different feature map sca
 
 Faster R-CNN breaks the text detection problem into two stages: finding possible text regions and classifying them. The losses reflect each of these tasks — whether it's finding a text region at all (train_loss_objectness), correctly identifying it as text (train_loss_classifier), or drawing the box in the right place (train_loss_box_reg). Together, these make up the total training loss, helping us monitor how well the model is learning to detect text.
 
-
 ![Alt text](https://github.com/mau-arrieta/Doc-Anonymizer/blob/main/doc-images/resnet-18-loss-metrics.png)
 
+In this case we saw that the train loss is around 0.46 and the validation loss is around 0.46, which indicates that the model on the 10th epoch has a valid result over the training with the stablished hyper parameters.
+
+After that we analyzed the metrics of the trained model. We have perceived that by class there is a certain relationship on the amount of times the type has been registered in the annotations and it's value on the metrics. In this case, paragraph it's clearly the label with most appearances and best metrics:
+
+![Alt text](https://github.com/mau-arrieta/Doc-Anonymizer/blob/main/doc-images/resnet-18-class-metrics.png)
 
 ### 3.5. Results 
 
