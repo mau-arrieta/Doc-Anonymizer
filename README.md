@@ -228,60 +228,193 @@ In the next steps, the focus shifted to exploring different CNN encoders, includ
 - Lightweight models like TinyCNN, and
 - More advanced alternatives like Transformer-based encoders, to evaluate how the choice of visual feature extractor impacts OCR performance.
 
-### **CRNN (Convolutional Recurrent Neural Network)**
+### 4.4.2  Multiple Arquitecture -CTC
 
--   **Stack:** CNN feature extractor + BiLSTM sequence model + FC head.
+### Why **CRNN → ResNet-18 → ViT-Tiny** were chosen
 
--   **Purpose:** Classic, widely used for OCR (scene and handwritten text).
+| Family                     | Concrete model we use                               | Why it belongs in the benchmark                                                                                                                                                                                                                                                                                                         | Key references in the labs                                                                                                              |
+| -------------------------- | --------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| **Recurrent-CNN baseline** | **CRNN** (small custom CNN + 2 × Bi-LSTM)           | *Historical anchor.*<br>• Purely “from-scratch”, no ImageNet weights → shows what the dataset itself can teach the network.<br>• Extremely light (<1 M params) and easy to train/interpret.          | *lab\_mlp\_cnn* → basic CNN building blocks.<br>*lab\_rnn* → Bi-LSTM sequencing.
+| **Transfer-learning CNN**  | **ResNet-18** (pre-trained, frozen-then-fine-tuned) | *Strong classical baseline.*<br>• Convolutional features are well matched to local stroke patterns in text.<br>• ImageNet pre-training means we need < fewer labelled lines to reach low CER.<br>• Still modest size (≈11 M params), fast on Colab GPUs.                                                                                | *lab\_transfer\_learning* shows how to freeze, then unfreeze.<br>*lab\_contrastive* motivates using powerful encoders with small heads. |
+| **Vision Transformer**     | **ViT-Tiny Patch16** (pre-trained)                  | *Modern research variant.*<br>• Self-attention can capture long-range relations → good for long text strings and wide aspect ratios.<br>• Patch-wise design simplifies to a 1-D sequence → meshes naturally with CTC after minimal reshaping.<br>• ViT-Tiny (192-dim, 12 layers) keeps GPU memory within Colab limits, unlike ViT-Base. | *lab\_diffusion* & *NLP Transformer labs* demonstrate positional embedding tricks we re-used (interpolating PE).                        |
 
--   **Details:** Uses several Conv2d layers, then two bidirectional LSTM layers, outputting per-timestep character logits for CTC decoding.
+_We retained the CRNN baseline for continuity and did two deliberate upgrades:_
 
-### **ResNet18 + BiLSTM (Hybrid)**
+*   **ResNet-18** to leverage transfer-learning from natural-image CNNs while keeping a lightweight model.
+    
+*   **ViT-Tiny** to test whether modern transformer backbones improve OCR on wide text lines; we added positional-embedding interpolation so it runs at 32×160 inputs.
+    
 
--   **Stack:** Pretrained ResNet18 as the feature extractor (truncated and spatially adapted) → BiLSTM → FC head.
+These three checkpoints give us a clear picture of **classical vs. transfer-learning vs. transformer** performance on the exact same dataset and training script.
 
--   **Purpose:** Leverages deeper CNNs (ResNet18) for better image features, especially with real-world or noisy images.
+#### 4.4.2.1  CRNN Family  — CNN + BiLSTM + CTC
 
--   **Details:** Custom backbone class adapts ResNet18, reduces spatial stride, and adds adaptation layers. Features are collapsed and passed to BiLSTM and then FC/CTC.
+Our CRNN baseline follows the classical pipeline proposed by Shi et al. (2017):
 
-| Run | Stride | Width | Freeze | Epochs | CER | Word Acc@0 | Notes |
-| `RESNET18 V1` | 2 | 128 | 0 | 30 | 11.8 % | 0.700 | baseline transfer‑learning |
-| `**RESNET18 V2**` | 1 | 256 | 0 | 50 | **8.62 %** | 0.710 | stride‑1, extra conv, BiLSTM 384 |
+1. **CNN Feature Extractor**    
+   5 convolutional blocks (64 → 512 channels) with interleaved BatchNorm, ReLU and 2×2 max-pooling.  
+   Output feature map: **[B, 512, H=1, W]**.
 
-**Observations**
+2. **Sequence Mapper**    
+   The height axis is squeezed (H = 1), leaving a width-wise sequence **[W, 512]** that represents the word from left to right.
 
--   Removing final stride keeps spatial resolution → +3 pp CER vs V1.
+3. **Bidirectional LSTM × 2**    
+   Hidden = 256 per direction → output dim = 512.
 
--   No freezing outperforms early‑freeze attempts; full gradient flow crucial.
+4. **Classification Head**    
+   Linear layer → logits of size *(vocab + blank)* at every time-step.
 
--   Balanced accuracy vs speed → good server‑side model.
+5. **Loss**    
+   Connectionist Temporal Classification (CTC) with blank = 62, ignoring PAD = 63.
 
-### **ViT-Tiny + BiLSTM (Vision Transformer Hybrid)**
+<div align="center">
+  <img src="https://github.com/user-attachments/assets/ec7d4139-db18-466b-a5ce-e24451f44659" width="210">
+</div>
 
--   **Stack:** Pretrained ViT-tiny (patch-based transformer encoder for images) as the feature extractor → BiLSTM → FC head.
+#### 4.4.2.2  Experiments
 
--   **Purpose:** Explores transformer-based global context for OCR, especially valuable on complex, distorted, or synthetic data.
+| Run (wandb) | Image Width | Augmentation | Batch | Max LR | Epochs | Notes |
+|-------------|------------|--------------|-------|--------|--------|-------|
+| **CRNN Baseline** | 128 px | Baseline | 128 | 1 e-3 | 30 | first scratch model |
+| **crnn Final MAP** | 192 px | *MAP* (elastic) | 64 | 1 e-3 | 30 | +dropout 0.20, One-Cycle LR |
 
--   **Details:** Handles patch resizing and positional embedding adjustment, then features are projected as sequences to BiLSTM and decoded via FC/CTC.
+Key tweaks that closed the gap:
 
-| Run | Width | Freeze | Aug | CER | Word Acc@0 | Notes |
-| `Vit Freeze` | 128 | gradual | Baseline | 10.5 % | 0.680 | first transformer attempt |
-| `Vit Aug` | 128 | 0 | Aug | 18 % | 0.419 | unstable -- over‑aug at low width |
-| `Vit‑6H` | 192 | 0 | Aug | 8.9 % | 0.730 | finer patches, slower |
-| `**Vit Tiny Final MAP**` | 256 | 3 epochs | MAP | **8.77 %** | 0.696 | width↑ + elastic aug |
+* **Wider input (128 → 192 px)** — doubles the LSTM time-steps, giving more context per word.
+* **Elastic-distortion augmentation** — combats synthetic-to-real domain gap.
+* **Dropout 0.20** on LSTM outputs — mitigates over-fitting without hurting convergence.
 
-**Insights**
+#### 4.4.2.3  Results & Discussion (22 k test set)
 
--   ViT needs **≥256 px width** + elastic aug to compete with CNNs.
+| Metric | CRNN Baseline | **crnn Final MAP** |
+|--------|---------------|--------------------|
+| Character Error Rate (↓) | 15.20 % | **6.72 %** |
+| Word Accuracy @0 (↑) | 0.580 | **0.766** |
+| Word Accuracy @1 (↑) | 0.710 | 0.880 |
+| Word Accuracy @2 (↑) | 0.780 | **0.926** |
+| Inference FPS (BS=1) | 250 | **250** |
 
--   3‑epoch freeze did **not** improve validation loss; kept for reproducibility.
+*The final CRNN nearly halves the CER of the baseline while keeping its class-leading speed (≈ 250 fps on an RTX 4000).*
 
--   Transformers lag CNNs in FPS, but offer global context and easier multi‑language extension.
-
-
-### Conclusions
+> **Take-away:** A well-regularised, width-scaled CRNN is hard to beat for word-level OCR when inference speed and model size matter. The gains justify retaining it as the reference point for the ResNet-18 and ViT-Tiny explorations.
 
 
+#### 4.4.2.2  ResNet-18 with Deep CNN Backbone
+
+We swap the 5-conv encoder of the CRNN for a **transfer-learned ResNet-18** to test whether deeper convolutional features boost recognition:
+
+1. **ResNet-18 Backbone**  
+   * Layers 0–3 kept as in ImageNet pre-train.  
+   * **Stride fix:** the final down-sampling in *layer4* is removed (stride 1 instead of 2) to preserve horizontal resolution.  
+   * One extra 3 × 3 conv (512 → 512) + ReLU refines the feature map.
+
+2. **Sequence Mapper**  
+   Height squeezed → sequence **[W, 512]** (≈ 64 time-steps with 256 px input).
+
+3. **BiLSTM × 2**  
+   Hidden = **384** per direction (larger than CRNN to exploit richer features).
+
+4. **CTC Head & Loss**  
+   Same as CRNN (vocab + blank).
+
+<div align="center">
+  <!-- schematic omitted; identical head to CRNN -->
+</div>
+
+##### Experiments
+
+| Run (wandb) | Stride | Image Width | Freeze | Epochs | CER ↓ | Word Acc@0 ↑ | Notes |
+|-------------|--------|------------|--------|--------|-------|--------------|-------|
+| **RESNET18 V1** | 2 | 128 px | none | 30 | 11.8 % | 0.700 | first TL baseline |
+| **RESNET18 V2** | **1** | **256 px** | none | 50 | **8.62 %** | **0.710** | stride-1 + wider + BiLSTM 384 |
+
+Key findings  
+* Removing the last stride **adds ×2 time-steps** yet only +2 MB params.  
+* Wider input (256 px) further lowers CER (~3 pp).  
+* Early experiments with **3-epoch freezing** hurt convergence → final model keeps **all layers trainable** from the start with a discriminative LR (1e-3 head / 3e-4 backbone).
+
+##### Results & Discussion (22 k test set)
+
+| Metric | RESNET18 V1 | **RESNET18 V2** |
+|--------|-------------|-----------------|
+| Character Error Rate (↓) | 11.80 % | **8.62 %** |
+| Word Accuracy @0 (↑) | 0.700 | **0.710** |
+| Word Accuracy @1 (↑) | 0.794 | **0.846** |
+| Word Accuracy @2 (↑) | 0.833 | **0.914** |
+| Inference FPS (BS = 1) | 190 | **175** |
+
+*ResNet18-V2 slices CER by **~27 %** over V1 and narrows the gap with CRNN to 1.9 pp, trading ~30 % inference speed.  
+Its balanced accuracy vs speed makes it the recommended CNN backbone when hardware allows a slightly heavier model.*
+
+
+#### 4.4.2.3  ViT-Tiny Vision-Transformer Backbone
+
+To test non-convolutional feature extractors we replaced the CNN encoder with **ViT-Tiny** (Dosovitskiy et al., 2021):
+
+1. **Patch Embedding**  
+   * 16 × 16 patches → 192-D embeddings.  
+   * With a 256 px-wide image this yields **16 × 16 = 256 tokens** (plus CLS).
+
+2. **Transformer Encoder**  
+   12 layers, 12 heads, GELU activations.  
+   Pre-trained on ImageNet-21k, fine-tuned end-to-end.
+
+3. **Sequence Mapper**  
+   CLS is discarded; the remaining patch tokens are reshaped into a **[W, 192]** sequence (left→right order).
+
+4. **BiLSTM × 2**  
+   Hidden = 256 each direction (kept small to offset ViT cost).
+
+5. **CTC Head & Loss**  
+   Same as CRNN/ResNet (vocab+blank).
+
+##### Experiments
+
+| Run (wandb) | Image Width | Freeze | Augmentation | CER ↓ | Word Acc@0 ↑ | Notes |
+|-------------|-------------|--------|--------------|-------|--------------|-------|
+| `Vit Freeze` | 128 px | gradual (layer-wise) | Baseline | 10.5 % | 0.680 | first stabilisation attempt |
+| `Vit Aug` | 128 px | none | strong | 18 % | 0.419 | over-augmented, unstable |
+| `Vit-6H` | 192 px | none | strong | 8.9 % | 0.730 | patch 4, 6 heads, slower |
+| **`Vit Tiny Final MAP`** | **256 px** | **first 3 epochs** | **MAP (elastic)** | **8.77 %** | **0.696** | best transformer balance |
+
+Tuning insights  
+
+* **Width matters** — 256 px input halves CER vs 128 px.  
+* **Early freeze (3 epochs)** did **not** lower over-fit but avoided initial divergence; kept for reproducibility.  
+* Patch-4, 6-head variant improves strict accuracy (0.730) but drops FPS (115 → 130).
+
+##### Results & Discussion (22 k test set)
+
+| Metric | Vit Freeze | Vit-6H | **Vit Tiny Final** |
+|--------|------------|--------|--------------------|
+| Character Error Rate (↓) | 10.50 % | 8.90 % | **8.77 %** |
+| Word Accuracy @0 (↑) | 0.680 | **0.730** | 0.696 |
+| Word Accuracy @1 (↑) | 0.800 | 0.830 | **0.839** |
+| Word Accuracy @2 (↑) | 0.860 | 0.890 | **0.906** |
+| Inference FPS (BS=1) | 140 | 115 | **130** |
+
+*ViT-Tiny Final closes to within **0.15 pp CER** of ResNet18-V2 while retaining 74 % of CRNN’s speed.  
+Transformers remain more data-hungry but become competitive once image width and elastic augmentation are raised.*
+
+---
+
+#### 4.4.2.4  Results Comparison
+
+| Model (22 k test set) | Params | CER ↓ | Word Acc @0 ↑ | Word Acc @1 ↑ | Word Acc @2 ↑ | Inference FPS* |
+|-----------------------|--------|-------|---------------|---------------|---------------|----------------|
+| **CRNN-Final**        | 7 M    | **6.72 %** | **0.766** | 0.880 | **0.926** | **250** |
+| **ResNet18-V2**       | 26 M   | 8.62 % | 0.710 | **0.846** | 0.914 | 175 |
+| **ViT-Tiny Final**    | 30 M   | 8.77 % | 0.696 | 0.839 | 0.906 | 130 |
+
+**Key take-aways**
+
+1. **Accuracy vs Speed**  
+   *CRNN-Final* delivers the **lowest CER** and highest word accuracy while maintaining the **fastest inference** (≈ 250 fps).  
+   *ResNet18-V2* trails by ~1.9 pp CER but gains +6 pp Word Acc @1 over CRNN, offering a balanced server-side option.  
+   *ViT-Tiny Final* matches ResNet on character-level accuracy yet remains slower and slightly behind on strict word matches.
+
+2. **Model Capacity**  
+   The two transfer-learning backbones (ResNet, ViT) require ≈ 4–5× more parameters than CRNN. Gains plateau once width = 256 px and BiLSTM ≥ 256 hidden.
 
 ## NATURAL LANGUAGE PROCESSING
 
