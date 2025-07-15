@@ -137,10 +137,7 @@ We used MultiScaleRoIAlign on 4 levels, which combines different feature map sca
 Faster R-CNN breaks the text detection problem into two stages: finding possible text regions and classifying them. The losses reflect each of these tasks — whether it's finding a text region at all (train_loss_objectness), correctly identifying it as text (train_loss_classifier), or drawing the box in the right place (train_loss_box_reg). Together, these make up the total training loss, helping us monitor how well the model is learning to detect text.
 
 
-<img width="1382" height="634" alt="image" src="https://github.com/user-attachments/assets/0891e3b8-ff03-482e-9c2a-172a01bb5790" />
-
-
-<img width="1382" height="634" alt="image" src="https://github.com/user-attachments/assets/01123a16-a728-43df-9440-a2439e30eac2" />
+![Alt text](https://github.com/mau-arrieta/Doc-Anonymizer/blob/main/doc-images/resnet-18-loss-metrics.png)
 
 
 ### 3.5. Results 
