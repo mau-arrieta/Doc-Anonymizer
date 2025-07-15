@@ -267,10 +267,6 @@ Our CRNN baseline follows the classical pipeline proposed by Shi et al. (2017):
 5. **Loss**    
    Connectionist Temporal Classification (CTC) with blank = 62, ignoring PAD = 63.
 
-<div align="center">
-  <img src="https://github.com/user-attachments/assets/ec7d4139-db18-466b-a5ce-e24451f44659" width="210">
-</div>
-
 #### 4.4.2.2  Experiments
 
 | Run (wandb) | Image Width | Augmentation | Batch | Max LR | Epochs | Notes |
