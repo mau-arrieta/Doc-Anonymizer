@@ -155,8 +155,6 @@ Various CNN-based backbones have been used to extract features from images. Thes
 
 ### **CRNN (Convolutional Recurrent Neural Network)**
 
-### **CRNN (Convolutional Recurrent Neural Network)**
-
 -   **Stack:** CNN feature extractor + BiLSTM sequence model + FC head.
 
 -   **Purpose:** Classic, widely used for OCR (scene and handwritten text).
