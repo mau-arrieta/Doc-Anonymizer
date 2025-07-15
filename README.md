@@ -153,6 +153,58 @@ In this setup, the image is encoded into a fixed representation, and a decoder g
 •	Encoder Variants:
 Various CNN-based backbones have been used to extract features from images. These include simple custom CNNs (e.g. TinyCNN) and deeper networks (e.g. ResNet), depending on the model variant being tested.
 
+### **CRNN (Convolutional Recurrent Neural Network)**
+
+### **CRNN (Convolutional Recurrent Neural Network)**
+
+-   **Stack:** CNN feature extractor + BiLSTM sequence model + FC head.
+
+-   **Purpose:** Classic, widely used for OCR (scene and handwritten text).
+
+-   **Details:** Uses several Conv2d layers, then two bidirectional LSTM layers, outputting per-timestep character logits for CTC decoding.
+
+### **ResNet18 + BiLSTM (Hybrid)**
+
+-   **Stack:** Pretrained ResNet18 as the feature extractor (truncated and spatially adapted) → BiLSTM → FC head.
+
+-   **Purpose:** Leverages deeper CNNs (ResNet18) for better image features, especially with real-world or noisy images.
+
+-   **Details:** Custom backbone class adapts ResNet18, reduces spatial stride, and adds adaptation layers. Features are collapsed and passed to BiLSTM and then FC/CTC.
+
+| Run | Stride | Width | Freeze | Epochs | CER | Word Acc@0 | Notes |
+| `RESNET18 V1` | 2 | 128 | 0 | 30 | 11.8 % | 0.700 | baseline transfer‑learning |
+| `**RESNET18 V2**` | 1 | 256 | 0 | 50 | **8.62 %** | 0.710 | stride‑1, extra conv, BiLSTM 384 |
+
+**Observations**
+
+-   Removing final stride keeps spatial resolution → +3 pp CER vs V1.
+
+-   No freezing outperforms early‑freeze attempts; full gradient flow crucial.
+
+-   Balanced accuracy vs speed → good server‑side model.
+
+### **ViT-Tiny + BiLSTM (Vision Transformer Hybrid)**
+
+-   **Stack:** Pretrained ViT-tiny (patch-based transformer encoder for images) as the feature extractor → BiLSTM → FC head.
+
+-   **Purpose:** Explores transformer-based global context for OCR, especially valuable on complex, distorted, or synthetic data.
+
+-   **Details:** Handles patch resizing and positional embedding adjustment, then features are projected as sequences to BiLSTM and decoded via FC/CTC.
+
+| Run | Width | Freeze | Aug | CER | Word Acc@0 | Notes |
+| `Vit Freeze` | 128 | gradual | Baseline | 10.5 % | 0.680 | first transformer attempt |
+| `Vit Aug` | 128 | 0 | Aug | 18 % | 0.419 | unstable -- over‑aug at low width |
+| `Vit‑6H` | 192 | 0 | Aug | 8.9 % | 0.730 | finer patches, slower |
+| `**Vit Tiny Final MAP**` | 256 | 3 epochs | MAP | **8.77 %** | 0.696 | width↑ + elastic aug |
+
+**Insights**
+
+-   ViT needs **≥256 px width** + elastic aug to compete with CNNs.
+
+-   3‑epoch freeze did **not** improve validation loss; kept for reproducibility.
+
+-   Transformers lag CNNs in FPS, but offer global context and easier multi‑language extension.
+
 #### Img2Seq: CNN + BiLSTM + CTC Loss
 
 In this architecture, a Convolutional Neural Network (CNN) is used as a feature extractor to encode the input image into a sequence of feature vectors. These are then passed to a Bidirectional LSTM (BiLSTM), which models the temporal dependencies in both forward and backward directions.
