@@ -85,6 +85,9 @@ The whole dataset was approximately 50gb, our model used 2.4% of it for fine-tun
 
 ### Metrics
 
+Faster R-CNN breaks the text detection problem into two stages: finding possible text regions and classifying them. The losses reflect each of these tasks — whether it's finding a text region at all (train_loss_objectness), correctly identifying it as text (train_loss_classifier), or drawing the box in the right place (train_loss_box_reg). Together, these make up the total training loss, helping us monitor how well the model is learning to detect text.
+
+
 <img width="1382" height="634" alt="image" src="https://github.com/user-attachments/assets/0891e3b8-ff03-482e-9c2a-172a01bb5790" />
 
 
@@ -216,7 +219,28 @@ Word accuracy @ k measures the proportion of word predictions that match the gro
 ## NATURAL LANGUAGE PROCESSING
 
 ### Architecture
+
+For the natural language processing task, SpaCy will be used as a pre-built, tried and tested model for text classification. SpaCy is an open-source library for Natural Language Processing (NLP) in Python. It provides fast and efficient tools for tasks like tokenization, part-of-speech tagging, named entity recognition (NER), and text classification.
+
+For classification, we leverage spaCy’s efficient NLP pipeline to assign a semantic label to each word, indicating whether it contains personal identifier information (PII) or not. We use the lightweight en_core_web_sm model, which provides named entity recognition (NER) capabilities suitable for detecting common types of sensitive content (e.g., names, locations, organizations). To maximize inference speed, we enable GPU acceleration when available via PyTorch, ensuring low-latency processing even at scale. Classification is performed in batches using spaCy’s nlp.pipe() method, allowing for fast, streaming inference across large datasets. The resulting entity label—if detected—is appended to the original OCR entry, preserving both the image and text information for each word. This integrated pipeline enables precise and efficient identification of sensitive content for downstream redaction or anonymization directly on document images.
+
 ### Results
+
+Results are varied as by this part of the pipeline our words come from both cropping of the original image (Computer vision module) and the text-detection from the OCR module. 
+
+<img width="554" height="73" alt="image" src="https://github.com/user-attachments/assets/c459734e-0f70-4f68-abfd-328532505162" />
+
+In this example we got a true positive, where the text "paper" is classified into the "None" (not sensitive) class.
+
+<img width="524" height="73" alt="image" src="https://github.com/user-attachments/assets/ba287542-f654-4cc7-a091-34b92720ae3a" />
+
+In this example we got another true positive, where the name "Aanye" is classified into the "Person" (sensitive) class.
+
+<img width="518" height="73" alt="image" src="https://github.com/user-attachments/assets/ac5ad296-172e-4f9c-b7fc-f3fd3cdeeeeb" />
+
+There are some other subtleties to take into account, for example, the word "Will" which could either refer to a name, or the verb used to express intentions. In this case SpaCy classifies it into "None" but for a more robust model, it might be better to take context into account when classifying sensitive information. A sliding window approach with variable window size might even be worth looking into, but is out of the scope of the current project.
+
+
 
 ## BLURRING
 
