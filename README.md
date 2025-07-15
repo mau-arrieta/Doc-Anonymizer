@@ -143,6 +143,23 @@ In practice, vocab_size = 62 (a-z: 26 characters + A-Z: 26 characters + 0-9: 10 
 A custom collate function has been defined to stack images into batch tensors and convert the list of encoded labels into tensors, enabling efficient and streamlined data feeding during model training.
 
 
+### Metrics defined for evaluation
+
+#### Character Error Rate (CER)
+
+CER is calculated based on the concept of Levenshtein distance, which counts the minimum number of character-level operations required to transform the ground truth text (also called the reference text) into the OCR output.
+It is represented by the formula:
+CER = (S+D+I)/N, where S = Number of Substitutions, D = Number of Deletions, I = Number of Insertions, N = Number of characters in reference text (aka ground truth).
+The output of this equation represents the percentage of characters in the reference text that was incorrectly predicted in the OCR output. The lower the CER value (with 0 being a perfect score), the better the performance of the OCR model.
+
+#### Word Accuracy @k
+
+Word accuracy @ k measures the proportion of word predictions that match the ground truth with up to k character differences (i.e. edit distance tolerance).
+-	This metric is useful when small typos are acceptable, providing a more flexible evaluation aligned with user-perceived correctness in OCR tasks.
+-	Additionally, it can be used in further applications such as identifying the most similar word within a distance of k, which is helpful for known error correction or approximate matching in post-processing pipelines.
+
+
+
 ### Architecture
 
 In this project, different OCR model architectures have been explored, depending on how the input image is processed and decoded into text. The main approaches considered are:
@@ -236,22 +253,6 @@ Input	                   128 × 32 grayscale image
 
 This variant uses the same CNN backbone to extract spatial features from the input image. Instead of a BiLSTM, it incorporates a learned attention mechanism to focus on different parts of the image sequence during decoding.
 The attention layer is followed by a sequence of dense layers, and the model is also trained using CTC loss. This combination allows the model to dynamically weight relevant image regions, improving interpretability and performance in cases where fixed receptive fields are limiting.
-
-
-### Metrics
-
-#### Character Error Rate (CER)
-
-CER is calculated based on the concept of Levenshtein distance, which counts the minimum number of character-level operations required to transform the ground truth text (also called the reference text) into the OCR output.
-It is represented by the formula:
-CER = (S+D+I)/N, where S = Number of Substitutions, D = Number of Deletions, I = Number of Insertions, N = Number of characters in reference text (aka ground truth).
-The output of this equation represents the percentage of characters in the reference text that was incorrectly predicted in the OCR output. The lower the CER value (with 0 being a perfect score), the better the performance of the OCR model.
-
-#### Word Accuracy @k
-
-Word accuracy @ k measures the proportion of word predictions that match the ground truth with up to k character differences (i.e. edit distance tolerance).
--	This metric is useful when small typos are acceptable, providing a more flexible evaluation aligned with user-perceived correctness in OCR tasks.
--	Additionally, it can be used in further applications such as identifying the most similar word within a distance of k, which is helpful for known error correction or approximate matching in post-processing pipelines.
 
 
 ### Results 
