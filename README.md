@@ -39,7 +39,6 @@ The proposal consists of four main modules, integrated into a pipeline that uses
 ![Alt text](https://github.com/mau-arrieta/Doc-Anonymizer/blob/main/doc-images/General%20Pipeline%20Concept.png)
 
 
-
 ## COMPUTER VISION
 
 ### 3.1. Hypothesis
@@ -79,9 +78,16 @@ The annotations included tokens our model didn't need to learn for this task (sy
 
 The whole dataset was approximately 50gb, our model used 2.4% of it for fine-tuning due to storage constraints the team worked with. Our final version was fine-tuned with a total of 12k document images, with a 80-10-10 data partition for training,validation and testing, in that order.
 
-
-
 ### 3.3. Architecture
+
+Our implemented architecture is based on the Faster R-CNN framework for object detection, which integrates three main components:
+
+1. **Feature extraction backbone: ResNet-18**.   We use ResNet-18 as the backbone convolutional neural network. ResNet-18 consists of an initial convolution + pooling layer followed by 4 residual blocks. Each residual block contains convolutional layers with skip connections (adding input directly to output), which stabilizes training even with increased depth. The backbone outputs a high-level feature map, typically 1/32 of the original input resolution, but rich in semantic information. We chose ResNet-18 as the backbone because it’s lightweight, ensuring faster training and inference, which is critical given the high-resolution nature of document images and the residual connections allow training deeper networks efficiently, but ResNet-18 is deep enough to capture important hierarchical document features (lines → paragraphs → figures).
+
+2. **Region Proposal Network (RPN)**. The RPN takes the feature map from ResNet-18 and slides small 3x3 convolutions across it. It predicts: objectness scores, whether each anchor (small sliding window) likely contains an object, and bounding box deltas, adjustments to anchors to better fit objects. The RPN uses multiple anchors at each position (different scales and aspect ratios), generating thousands of candidate regions (ROIs).
+
+3. **ROI Heads (Classifier + Regressor)**. The top N proposals from the RPN are then processed by ROI Pooling/ROI Align which consists on crops + resizes each proposed region from the feature map to a fixed size (e.g., 7x7). A series of fully connected layers (MLP) predict: Class scores (multi-class softmax over our labels like "title", "paragraph", "figure", etc) and bounding box refinements for each predicted class.
+
 
 ### 3.4. Metrics
 
