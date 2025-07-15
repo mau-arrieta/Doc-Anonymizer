@@ -1,5 +1,5 @@
 # DOCUMENT ANONYMIZATION
-Final project for the 2025 Postgraduate course on Artificial Intelligence with Deep Learning, UPC School, proposed by **Mauricio Arrieta**, **Adrià Buil**, **Xavi Rodríguez** and **Antoni Jordi Noguera**. 
+Final project for the 2025 Postgraduate course on Artificial Intelligence with Deep Learning, UPC School, proposed by **Mauricio Arrieta**, **Adrià Buil**, **Xavi Rodríguez de la Rubia** and **Antoni Jordi Noguera**. 
 
 Advised by **Pol Caselles**.
 
@@ -85,6 +85,9 @@ The whole dataset was approximately 50gb, our model used 2.4% of it for fine-tun
 
 ### Metrics
 
+Faster R-CNN breaks the text detection problem into two stages: finding possible text regions and classifying them. The losses reflect each of these tasks — whether it's finding a text region at all (train_loss_objectness), correctly identifying it as text (train_loss_classifier), or drawing the box in the right place (train_loss_box_reg). Together, these make up the total training loss, helping us monitor how well the model is learning to detect text.
+
+
 <img width="1382" height="634" alt="image" src="https://github.com/user-attachments/assets/0891e3b8-ff03-482e-9c2a-172a01bb5790" />
 
 
@@ -140,6 +143,23 @@ In practice, vocab_size = 62 (a-z: 26 characters + A-Z: 26 characters + 0-9: 10 
 A custom collate function has been defined to stack images into batch tensors and convert the list of encoded labels into tensors, enabling efficient and streamlined data feeding during model training.
 
 
+### Metrics defined for evaluation
+
+#### Character Error Rate (CER)
+
+CER is calculated based on the concept of Levenshtein distance, which counts the minimum number of character-level operations required to transform the ground truth text (also called the reference text) into the OCR output.
+It is represented by the formula:
+CER = (S+D+I)/N, where S = Number of Substitutions, D = Number of Deletions, I = Number of Insertions, N = Number of characters in reference text (aka ground truth).
+The output of this equation represents the percentage of characters in the reference text that was incorrectly predicted in the OCR output. The lower the CER value (with 0 being a perfect score), the better the performance of the OCR model.
+
+#### Word Accuracy @k
+
+Word accuracy @ k measures the proportion of word predictions that match the ground truth with up to k character differences (i.e. edit distance tolerance).
+-	This metric is useful when small typos are acceptable, providing a more flexible evaluation aligned with user-perceived correctness in OCR tasks.
+-	Additionally, it can be used in further applications such as identifying the most similar word within a distance of k, which is helpful for known error correction or approximate matching in post-processing pipelines.
+
+
+
 ### Architecture
 
 In this project, different OCR model architectures have been explored, depending on how the input image is processed and decoded into text. The main approaches considered are:
@@ -149,6 +169,56 @@ The image is first encoded as a sequence of features, typically by slicing it co
 In this setup, the image is encoded into a fixed representation, and a decoder generates one character at a time. These models are typically trained with Cross Entropy Loss and include architectures like GRUs or Transformers with attention. Although initially explored, this approach was not included in the final evaluation.
 •	Encoder Variants:
 Various CNN-based backbones have been used to extract features from images. These include simple custom CNNs (e.g. TinyCNN) and deeper networks (e.g. ResNet), depending on the model variant being tested.
+
+### **CRNN (Convolutional Recurrent Neural Network)**
+
+-   **Stack:** CNN feature extractor + BiLSTM sequence model + FC head.
+
+-   **Purpose:** Classic, widely used for OCR (scene and handwritten text).
+
+-   **Details:** Uses several Conv2d layers, then two bidirectional LSTM layers, outputting per-timestep character logits for CTC decoding.
+
+### **ResNet18 + BiLSTM (Hybrid)**
+
+-   **Stack:** Pretrained ResNet18 as the feature extractor (truncated and spatially adapted) → BiLSTM → FC head.
+
+-   **Purpose:** Leverages deeper CNNs (ResNet18) for better image features, especially with real-world or noisy images.
+
+-   **Details:** Custom backbone class adapts ResNet18, reduces spatial stride, and adds adaptation layers. Features are collapsed and passed to BiLSTM and then FC/CTC.
+
+| Run | Stride | Width | Freeze | Epochs | CER | Word Acc@0 | Notes |
+| `RESNET18 V1` | 2 | 128 | 0 | 30 | 11.8 % | 0.700 | baseline transfer‑learning |
+| `**RESNET18 V2**` | 1 | 256 | 0 | 50 | **8.62 %** | 0.710 | stride‑1, extra conv, BiLSTM 384 |
+
+**Observations**
+
+-   Removing final stride keeps spatial resolution → +3 pp CER vs V1.
+
+-   No freezing outperforms early‑freeze attempts; full gradient flow crucial.
+
+-   Balanced accuracy vs speed → good server‑side model.
+
+### **ViT-Tiny + BiLSTM (Vision Transformer Hybrid)**
+
+-   **Stack:** Pretrained ViT-tiny (patch-based transformer encoder for images) as the feature extractor → BiLSTM → FC head.
+
+-   **Purpose:** Explores transformer-based global context for OCR, especially valuable on complex, distorted, or synthetic data.
+
+-   **Details:** Handles patch resizing and positional embedding adjustment, then features are projected as sequences to BiLSTM and decoded via FC/CTC.
+
+| Run | Width | Freeze | Aug | CER | Word Acc@0 | Notes |
+| `Vit Freeze` | 128 | gradual | Baseline | 10.5 % | 0.680 | first transformer attempt |
+| `Vit Aug` | 128 | 0 | Aug | 18 % | 0.419 | unstable -- over‑aug at low width |
+| `Vit‑6H` | 192 | 0 | Aug | 8.9 % | 0.730 | finer patches, slower |
+| `**Vit Tiny Final MAP**` | 256 | 3 epochs | MAP | **8.77 %** | 0.696 | width↑ + elastic aug |
+
+**Insights**
+
+-   ViT needs **≥256 px width** + elastic aug to compete with CNNs.
+
+-   3‑epoch freeze did **not** improve validation loss; kept for reproducibility.
+
+-   Transformers lag CNNs in FPS, but offer global context and easier multi‑language extension.
 
 #### Img2Seq: CNN + BiLSTM + CTC Loss
 
@@ -185,22 +255,6 @@ This variant uses the same CNN backbone to extract spatial features from the inp
 The attention layer is followed by a sequence of dense layers, and the model is also trained using CTC loss. This combination allows the model to dynamically weight relevant image regions, improving interpretability and performance in cases where fixed receptive fields are limiting.
 
 
-### Metrics
-
-#### Character Error Rate (CER)
-
-CER is calculated based on the concept of Levenshtein distance, which counts the minimum number of character-level operations required to transform the ground truth text (also called the reference text) into the OCR output.
-It is represented by the formula:
-CER = (S+D+I)/N, where S = Number of Substitutions, D = Number of Deletions, I = Number of Insertions, N = Number of characters in reference text (aka ground truth).
-The output of this equation represents the percentage of characters in the reference text that was incorrectly predicted in the OCR output. The lower the CER value (with 0 being a perfect score), the better the performance of the OCR model.
-
-#### Word Accuracy @k
-
-Word accuracy @ k measures the proportion of word predictions that match the ground truth with up to k character differences (i.e. edit distance tolerance).
--	This metric is useful when small typos are acceptable, providing a more flexible evaluation aligned with user-perceived correctness in OCR tasks.
--	Additionally, it can be used in further applications such as identifying the most similar word within a distance of k, which is helpful for known error correction or approximate matching in post-processing pipelines.
-
-
 ### Results 
 
 <img width="865" height="548" alt="image" src="https://github.com/user-attachments/assets/92b5431b-d1b2-4ab7-8f1d-05b99dfd0181" />
@@ -216,7 +270,28 @@ Word accuracy @ k measures the proportion of word predictions that match the gro
 ## NATURAL LANGUAGE PROCESSING
 
 ### Architecture
+
+For the natural language processing task, SpaCy will be used as a pre-built, tried and tested model for text classification. SpaCy is an open-source library for Natural Language Processing (NLP) in Python. It provides fast and efficient tools for tasks like tokenization, part-of-speech tagging, named entity recognition (NER), and text classification.
+
+For classification, we leverage spaCy’s efficient NLP pipeline to assign a semantic label to each word, indicating whether it contains personal identifier information (PII) or not. We use the lightweight en_core_web_sm model, which provides named entity recognition (NER) capabilities suitable for detecting common types of sensitive content (e.g., names, locations, organizations). To maximize inference speed, we enable GPU acceleration when available via PyTorch, ensuring low-latency processing even at scale. Classification is performed in batches using spaCy’s nlp.pipe() method, allowing for fast, streaming inference across large datasets. The resulting entity label—if detected—is appended to the original OCR entry, preserving both the image and text information for each word. This integrated pipeline enables precise and efficient identification of sensitive content for downstream redaction or anonymization directly on document images.
+
 ### Results
+
+Results are varied as by this part of the pipeline our words come from both cropping of the original image (Computer vision module) and the text-detection from the OCR module. 
+
+<img width="554" height="73" alt="image" src="https://github.com/user-attachments/assets/c459734e-0f70-4f68-abfd-328532505162" />
+
+In this example we got a true positive, where the text "paper" is classified into the "None" (not sensitive) class.
+
+<img width="524" height="73" alt="image" src="https://github.com/user-attachments/assets/ba287542-f654-4cc7-a091-34b92720ae3a" />
+
+In this example we got another true positive, where the name "Aanye" is classified into the "Person" (sensitive) class.
+
+<img width="518" height="73" alt="image" src="https://github.com/user-attachments/assets/ac5ad296-172e-4f9c-b7fc-f3fd3cdeeeeb" />
+
+There are some other subtleties to take into account, for example, the word "Will" which could either refer to a name, or the verb used to express intentions. In this case SpaCy classifies it into "None" but for a more robust model, it might be better to take context into account when classifying sensitive information. A sliding window approach with variable window size might even be worth looking into, but is out of the scope of the current project.
+
+
 
 ## BLURRING
 
