@@ -281,6 +281,7 @@ In the next steps, the focus shifted to exploring different CNN encoders, includ
 ### 4.4.2  Multiple Arquitecture-CTC
 
 Reproducible notebook path: /model-baklog/OCR_crnn_resnet18_vit_tiny.ipynb
+
 Experiments database (22k sample @Synth90k): https://drive.google.com/drive/folders/1KUnCBEJOfbnoZyeaO0-5YeqP4szKyW1f?usp=sharing
 
 ### Why **CRNN → ResNet-18 → ViT-Tiny** were chosen
@@ -290,8 +291,9 @@ Experiments database (22k sample @Synth90k): https://drive.google.com/drive/fold
 | **Recurrent-CNN baseline** | **CRNN-Final** (5-conv CNN + 2 × BiLSTM)            | *Historical anchor.*<br>• Pure “from-scratch” training shows what the 22 k subset alone can achieve.<br>• Still compact (≈ **7 M** params incl. BiLSTM) and fastest in inference.                                                                                 | *lab_mlp_cnn* → conv blocks<br>*lab_rnn* → Bi-LSTM sequencing |
 | **Transfer-learning CNN**  | **ResNet18-V2** (pre-trained, unfrozen)             | *Strong classical baseline.*<br>• ImageNet features match local stroke patterns.<br>• Moderately sized (≈ **26 M** params incl. BiLSTM 384).                                                                                                                     | *lab_transfer_learning* (freeze/unfreeze)<br>*lab_contrastive* (powerful encoders) |
 | **Vision Transformer**     | **ViT-Tiny Patch16** (pre-trained)                  | *Modern research variant.*<br>• Self-attention captures long-range glyph relations.<br>• Patch-wise tokens feed naturally into CTC.<br>• ViT-Tiny keeps memory reasonable (≈ **30 M** params incl. BiLSTM).                                                      | *NLP Transformer labs* (pos-embedding tricks) |
-
 <sub>Parameter counts include the 2 × BiLSTM head and classification layer for fairness across families.</sub>
+
+<img width="1039" height="440" alt="image" src="https://github.com/user-attachments/assets/b7e5b82a-f96a-4425-95d7-b0922a356285" />
 
 _We retained the CRNN baseline for continuity and did two deliberate upgrades:_
 
@@ -324,10 +326,10 @@ Our CRNN baseline follows the classical pipeline proposed by Shi et al. (2017):
 
 #### 4.4.2.1.1  Experiments
 
-| Run (wandb) | Image Width | Augmentation | Batch | Max LR | Epochs | Notes |
-|-------------|------------|--------------|-------|--------|--------|-------|
-| **CRNN Baseline** | 128 px | Baseline | 128 | 1 e-3 | 30 | first scratch model |
-| **crnn Final MAP** | 192 px | *MAP* (elastic) | 64 | 1 e-3 | 30 | +dropout 0.20, One-Cycle LR |
+| Run (wandb)      | Image Width | Augmentation | Batch | Max LR | Epochs | Notes |
+|------------------|-------------|--------------|-------|--------|--------|-------|
+| **CRNN Baseline** | 128 px      | Baseline     | 128   | 1e-3   | 30     | first scratch model |
+| **crnn Final MAP** | 192 px      | *MAP* (elastic) | 64 | 1e-3   | 30     | +dropout 0.20, One-Cycle LR |
 
 Key tweaks that closed the gap:
 
@@ -366,12 +368,19 @@ We swap the 5-conv encoder of the CRNN for a **transfer-learned ResNet-18** to t
 4. **CTC Head & Loss**  
    Same as CRNN (vocab + blank).
 
+**Training-strategy highlights**
+
+* **Progressive unfreeze**  – layer4 at epoch 10, layer3 at epoch 20, full backbone at epoch 30.  
+* **Discriminative LRs**    – 1e-3 (new head) · 3e-4 (layer 4) · 1e-4 (layers 0-3).  
+* **Scheduler**             – cosine with 5 % warm-up, 50 epochs total.  
+* Goal: keep generic ImageNet features intact while allowing later blocks to specialise to glyph strokes without catastrophic forgetting.
+
 ##### Experiments
 
-| Run (wandb) | Stride | Image Width | Freeze | Epochs | CER ↓ | Word Acc@0 ↑ | Notes |
-|-------------|--------|------------|--------|--------|-------|--------------|-------|
-| **RESNET18 V1** | 2 | 128 px | none | 30 | 11.8 % | 0.700 | first TL baseline |
-| **RESNET18 V2** | **1** | **256 px** | none | 50 | **8.62 %** | **0.710** | stride-1 + wider + BiLSTM 384 |
+| Run (wandb)       | Stride | Image Width | Freeze | Epochs | CER ↓ | Word Acc@0 ↑ | Notes |
+|-------------------|--------|-------------|--------|--------|-------|--------------|-------|
+| **RESNET18 V1**   | 2      | 128 px      | none   | 30     | **57.37 %** | **0.115** | first TL baseline |
+| **RESNET18 V2**   | **1**  | **256 px**  | none   | 50     | **8.62 %**  | **0.710** | stride-1 + wider + BiLSTM 384 |
 
 Key findings  
 * Removing the last stride **adds ×2 time-steps** yet only +2 MB params.  
@@ -385,11 +394,11 @@ Key findings
 
 | Metric | RESNET18 V1 | **RESNET18 V2** |
 |--------|-------------|-----------------|
-| Character Error Rate (↓) | 11.80 % | **8.62 %** |
-| Word Accuracy @0 (↑) | 0.700 | **0.710** |
-| Word Accuracy @1 (↑) | 0.794 | **0.846** |
-| Word Accuracy @2 (↑) | 0.833 | **0.914** |
-| Inference FPS (BS = 1) | 190 | **175** |
+| Character Error Rate (↓) | **57.37 %** | **8.62 %** |
+| Word Accuracy @0 (↑)      | 0.115 | **0.710** |
+| Word Accuracy @1 (↑)      | 0.221 | **0.846** |
+| Word Accuracy @2 (↑)      | 0.331 | **0.914** |
+
 
 *ResNet18-V2 slices CER by **~27 %** over V1 and narrows the gap with CRNN to 1.9 pp, trading ~30 % inference speed.  
 Its balanced accuracy vs speed makes it the recommended CNN backbone when hardware allows a slightly heavier model.*
@@ -418,28 +427,35 @@ To test non-convolutional feature extractors we replaced the CNN encoder with **
 
 ##### Experiments
 
-| Run (wandb) | Image Width | Freeze | Augmentation | CER ↓ | Word Acc@0 ↑ | Notes |
-|-------------|-------------|--------|--------------|-------|--------------|-------|
-| `Vit Freeze` | 128 px | gradual (layer-wise) | Baseline | 10.5 % | 0.680 | first stabilisation attempt |
-| `Vit Aug` | 128 px | none | strong | 18 % | 0.419 | over-augmented, unstable |
-| `Vit-6H` | 192 px | none | strong | 8.9 % | 0.730 | patch 4, 6 heads, slower |
-| **`Vit Tiny Final MAP`** | **256 px** | **first 3 epochs** | **MAP (elastic)** | **8.77 %** | **0.696** | best transformer balance |
+<img width="1285" height="767" alt="image" src="https://github.com/user-attachments/assets/8eff251f-8971-4962-be4e-f13d575f569e" />
+*Fig. below confirms the yellow curve (ViT-Tiny Final) overtakes the blue “Freeze” run after epoch 15 and stabilises at ≈0.84 Word Acc @1.*
 
-Tuning insights  
+| Run (wandb)        | Image W | Freeze | Augmentation | CER ↓ | Word Acc@0 ↑ | Notes |
+|--------------------|---------|--------|--------------|-------|--------------|-------|
+| `Vit Freeze`       | 128 px  | gradual | Baseline     | **87.83 %** | 0.000 | diverged – kept for record |
+| `Vit Aug`          | 128 px  | none   | strong       | 17.96 % | 0.419 | over-regularised |
+| `Vit-Tiny-6H`      | 192 px  | none   | strong       | 17.96 % | 0.419 | patch 4, 6 heads, 115 fps |
+| **`Vit-Tiny Final`** | **256 px** | **first 3 epochs frozen** | **MAP (elastic)** | **8.77 %** | **0.696** | best transformer balance |
 
-* **Width matters** — 256 px input halves CER vs 128 px.  
+<sub>*Patch 8/4 trials raised detail but exceeded GPU memory at batch 32.  
+Patch 16 on 256 px halves CER versus 128 px while fitting on a single T4.*</sub>
+
+*Tuning insights*  
+
+* **Width matters** — 256 px input reduces CER from **17.96 % → 8.77 %**.  
 * **Early freeze (3 epochs)** did **not** lower over-fit but avoided initial divergence; kept for reproducibility.  
-* Patch-4, 6-head variant improves strict accuracy (0.730) but drops FPS (115 → 130).
+* **Patch-4, 6-head** variant does **not** improve strict accuracy (0.419) and is slower (115 fps).
+
 
 ##### Results & Discussion (22 k test set)
 
 | Metric | Vit Freeze | Vit-6H | **Vit Tiny Final** |
 |--------|------------|--------|--------------------|
-| Character Error Rate (↓) | 10.50 % | 8.90 % | **8.77 %** |
-| Word Accuracy @0 (↑) | 0.680 | **0.730** | 0.696 |
-| Word Accuracy @1 (↑) | 0.800 | 0.830 | **0.839** |
-| Word Accuracy @2 (↑) | 0.860 | 0.890 | **0.906** |
-| Inference FPS (BS=1) | 140 | 115 | **130** |
+| Character Error Rate (↓) | **87.83 %** | 17.96 % | **8.77 %** |
+| Word Accuracy @0 (↑)     | 0.000 | 0.419 | **0.696** |
+| Word Accuracy @1 (↑)     | 0.000 | 0.657 | **0.839** |
+| Word Accuracy @2 (↑)     | 0.007 | 0.793 | **0.906** |
+| Inference FPS            | 140   | 115   | **130** |
 
 *ViT-Tiny Final closes to within **0.15 pp CER** of ResNet18-V2 while retaining 74 % of CRNN’s speed.  
 Transformers remain more data-hungry but become competitive once image width and elastic augmentation are raised.*
@@ -448,11 +464,22 @@ Transformers remain more data-hungry but become competitive once image width and
 
 #### 4.4.2.4  Results Comparison
 
-| Model (22 k test set) | Params | CER ↓ | Word Acc @0 ↑ | Word Acc @1 ↑ | Word Acc @2 ↑ | Inference FPS* |
-|-----------------------|--------|-------|---------------|---------------|---------------|----------------|
-| **CRNN-Final**        | 7 M    | **6.72 %** | **0.766** | 0.880 | **0.926** | **250** |
-| **ResNet18-V2**       | 26 M   | 8.62 % | 0.710 | **0.846** | 0.914 | 175 |
-| **ViT-Tiny Final**    | 30 M   | 8.77 % | 0.696 | 0.839 | 0.906 | 130 |
+> **Ablation journey in three lines**  
+> • **CRNN** – wider input 128 → 192 px ⇒ CER 15.2 → 6.7 % (-8.5 pp)  
+> • **ResNet-18** – stride-1 + BiLSTM-384 ⇒ CER 57.4 → 8.6 % (-7×)  
+> • **ViT-Tiny** – input 256 px + elastic aug ⇒ CER 17.9 → 8.8 % (-9.1 pp)
+
+<img width="1271" height="579" alt="image" src="https://github.com/user-attachments/assets/150adc37-1362-4d7b-b419-444682a80653" />
+
+
+| Model                | Params | CER ↓ | Word Acc @0 ↑ | Word Acc @1 ↑ | Word Acc @2 ↑ | FPS |
+|----------------------|--------|-------|---------------|---------------|---------------|-----|
+| **CRNN-Final**       | 7 M  | **6.72 %** | **0.766** | 0.880 | **0.926** | **250** |
+| **ResNet18-V2**      | 26 M | 8.62 % | 0.710 | **0.846** | 0.914 | 175 |
+| **ViT-Tiny Final**   | 30 M | 8.77 % | 0.696 | 0.839 | 0.906 | 130 |
+| ResNet18-V1          | 26 M | 57.37 % | 0.115 | 0.221 | 0.331 | 190 |
+| ViT-6H               | 34 M | 17.96 % | 0.419 | 0.657 | 0.793 | 115 |
+
 
 **Key take-aways**
 
