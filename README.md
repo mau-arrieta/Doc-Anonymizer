@@ -213,11 +213,13 @@ Word accuracy @ k measures the proportion of word predictions that match the gro
 ### 4.4. Architectures and Results
 
 In this project, different OCR model architectures have been explored, depending on how the input image is processed and decoded into text. The main approaches considered are:
-- Image-to-Sequence (img2seq):
+- **Image-to-Sequence (img2seq):** [img2seq (.ipynb)](https://github.com/mau-arrieta/Doc-Anonymizer/blob/main/models/OCR_img_to_seq.ipynb)<br>
 The image is first encoded as a sequence of features, typically by slicing it column-wise after passing through a CNN. The full word is then predicted as a sequence using models trained with Connectionist Temporal Classification (CTC) Loss. This has been the main approach used in the project.
-- Sequence-to-Sequence (seq2seq):
+
+- **Sequence-to-Sequence (seq2seq):** [seq2seq (.ipynb)](https://github.com/mau-arrieta/Doc-Anonymizer/blob/main/model-backlog/OCR_seq_to_seq.ipynb)<br>
 In this setup, the image is encoded into a fixed representation, and a decoder generates one character at a time. These models are typically trained with Cross Entropy Loss and include architectures like GRUs or Transformers with attention. Although initially explored, this autoregressive approach was not included in the final evaluation.
-- Encoder Variants:
+
+- **Encoder Variants:** [Encoder variants (.ipynb)](https://github.com/mau-arrieta/Doc-Anonymizer/blob/main/model-backlog/OCR_crnn_resnet18_vit_tiny.ipynb)<br>
 Various CNN-based backbones have been used to extract features from images. These include simple custom CNNs (e.g. TinyCNN) and deeper networks (e.g. ResNet), depending on the model variant being tested.
 
 #### 4.4.1. Image-to-Sequence approach:
@@ -231,10 +233,10 @@ The model is trained using Connectionist Temporal Classification (CTC) loss, whi
 This architecture has proven to be robust and stable, providing consistently good results in the experiments.
 
 <img width="372" height="434" alt="image" src="https://github.com/user-attachments/assets/21788728-13cf-477d-af72-7d2892e538b1" />
-
 https://arxiv.org/pdf/1507.05717
+<br>
 
-<img width="235" height="278" alt="image" src="https://github.com/user-attachments/assets/ec7d4139-db18-466b-a5ce-e24451f44659" />
+<img width="352,5" height="417" alt="image" src="https://github.com/user-attachments/assets/ec7d4139-db18-466b-a5ce-e24451f44659" />
 
 
 #### 4.4.1.2. CAN: CNN + Attention + CTC Loss
@@ -245,13 +247,10 @@ The attention layer is followed by a sequence of dense layers, and the model is 
 
 #### 4.4.1.3. Results Comparision
 
-Training configuration:
-
-*num_images = 25,000*
-*epochs = 15*
-*batch_size = 32*
+Training configuration: *num_images = 25,000; epochs = 15; batch_size = 32*
 
 <img width="1022" height="552" alt="image" src="https://github.com/user-attachments/assets/f597a001-0cb6-4692-aa72-fe415cf09a1a" />
+<br>
 
 Model Size:
 - CAN has significantly fewer parameters than CRNN (~2.5M vs. ~4.5M), making it more lightweight and potentially more efficient for deployment.
