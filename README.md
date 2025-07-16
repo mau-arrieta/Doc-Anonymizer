@@ -56,6 +56,10 @@ Furthermore, the module is designed with a Faster R-CNN based model for out text
 
 The dataset used for the word-box detection task is the [DocBank dataset](https://doc-analysis.github.io/docbank-page/). It was originally designed for textual and document layout tasks, and the version used for this project consists of 500K document pages, along with their corresponging annotations.
 
+We divided the dataset in two folders: [images](https://drive.google.com/drive/folders/1KascU0IH0U67noNYOJY9I07SzHiqrVcb?usp=sharing) and [transformed labels](https://drive.google.com/drive/folders/1M1L00t8I-NPWtwWi1g4bBxqBorU9tTAL?usp=sharing). Inside each folder there is a subfolder that determines the segmentation on train, validation and test.
+
+NOTE: If the intention is to simulate the training done by the team, we encourage to download a copy on your drive (under the My Drive folder of Google Drive) and modifying the relative paths used to obtain the data from the dataset to the one desired.
+
 Annotations are based on 12 labels, which correspond to each area of the document layout:
 
 ![Alt text](https://github.com/mau-arrieta/Doc-Anonymizer/blob/main/doc-images/docbankLayout.png)
@@ -542,9 +546,11 @@ There are some other subtleties to take into account, for example, the word "Wil
 
 
 ## BLURRING
+The blurring consists in a script that by using the library ImageFilter from PIL it can blur the region selected. In this case, the region is being determined by the coordinates of each point of the bounding boxes. 
 
-### Architecture
-### Results
+This value has been stored in the dictionary that contains the values of the image contained in the bounding boxes resulted from the Computer Vision word detection: the text of the word that appears in the image, the label assigned from Spacy, coordinates of the cropp and the cropped image itself.
+
+To execute the bluring, we iterate for each element in the dictionary and depending on its label assigned from Spacy, we can determine if an element of the dictionary must be blurred or not. The condition consists if the value of the label is "PERSON" (People, including fictional), "DATE" (Absolute or relative dates or periods), "LOC" (Non-GPE locations, mountain ranges, bodies of water), "GPE" (Countries, cities, states) or "NORP" (Nationalities or religious or political groups).
 
 ## HOW TO RUN
 
@@ -577,10 +583,3 @@ Finally the SpaCy library is imported and used for the text classification task,
 
 
 All of the steps are sequential. If the notebook is run cell by cell, you will be able to use our trained weights on our models and visually confirm the results, all in the same notebook!
-
-
-
-
-
-
-
