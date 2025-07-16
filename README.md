@@ -547,3 +547,40 @@ There are some other subtleties to take into account, for example, the word "Wil
 ### Results
 
 ## HOW TO RUN
+
+
+Within this repositories' files, you'll find [Complete_Anonymization_Pipeline.ipynb](https://github.com/mau-arrieta/Doc-Anonymizer/blob/main/Complete_Anonymization_Pipeline.ipynb). download and open it, either with google collab, vsCode, or your preferred method of working with jupyter notebooks.
+
+
+If you run the notebook cell by cell, you'll find the project setup, library downloads, model definition, weight loading and inference runs. Model weights are downloaded from our own public HuggingFace Hub model, so there is no need for authorization or any kind of login to access them. 
+
+You will be asked to upload an image to test the pipeline. Our models have been trained with document images containing text so take this into account if you expect good results.
+
+<img width="1210" height="305" alt="image" src="https://github.com/user-attachments/assets/2c5e2ef7-b2d1-48ee-afff-4703cd328d17" />
+
+Once uploaded, you can visually verify results for both the computer vision and the OCR model for the image you uploaded in the respective cells that perform inference with the use of these models. 
+
+
+<img width="298" height="274" alt="image" src="https://github.com/user-attachments/assets/d931fef8-d4af-431d-b931-9eec9f005a90" />
+
+
+The crops shown as output from the Computer vision module are passed into the OCR model for text extraction
+
+
+<img width="298" height="336" alt="image" src="https://github.com/user-attachments/assets/242c0f93-326f-4a74-89ac-4134c3f471a5" />
+
+
+Finally the SpaCy library is imported and used for the text classification task, which is fed into a blurring function that blurs out text marked as sensitive.
+
+
+<img width="573" height="148" alt="image" src="https://github.com/user-attachments/assets/a72af8c0-51b2-42d3-853d-785e1731846f" />
+
+
+All of the steps are sequential. If the notebook is run cell by cell, you will be able to use our trained weights on our models and visually confirm the results, all in the same notebook!
+
+
+
+
+
+
+
