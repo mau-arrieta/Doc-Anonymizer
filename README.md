@@ -436,7 +436,9 @@ To test non-convolutional feature extractors we replaced the CNN encoder with **
 ##### Experiments
 
 <img width="1285" height="767" alt="image" src="https://github.com/user-attachments/assets/8eff251f-8971-4962-be4e-f13d575f569e" />
+
 *Fig. below confirms the yellow curve (ViT-Tiny Final) overtakes the blue “Freeze” run after epoch 15 and stabilises at ≈0.84 Word Acc @1.*
+
 
 | Run (wandb)        | Image W | Freeze | Augmentation | CER ↓ | Word Acc@0 ↑ | Notes |
 |--------------------|---------|--------|--------------|-------|--------------|-------|
