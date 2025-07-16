@@ -278,9 +278,16 @@ In the next steps, the focus shifted to exploring different CNN encoders, includ
 - Lightweight models like TinyCNN, and
 - More advanced alternatives like Transformer-based encoders, to evaluate how the choice of visual feature extractor impacts OCR performance.
 
-### 4.4.2  Multiple Arquitecture-CTC
+### 4.4.2 Multiple Architectures Under a Common CTC Head
 
 <img width="1039" height="440" alt="image" src="https://github.com/user-attachments/assets/b7e5b82a-f96a-4425-95d7-b0922a356285" />
+Figure 1 (below) summarises the **shared decoding stack** used in all subsequent experiments: the visual backbone (CNN or ViT) feeds a **common sequence head of 2 × Bi‑LSTM + Linear + CTC**.  
+
+We evaluate three encoders:
+
+* **CRNN‑Family encoder** – 5‑conv lightweight CNN (from scratch).  
+* **ResNet‑18** – ImageNet‑pretrained CNN with final stride = 1.  
+* **ViT‑Tiny Patch16** – ImageNet‑pretrained Vision Transformer.
 
 Reproducible notebook path: /model-baklog/OCR_crnn_resnet18_vit_tiny.ipynb
 
@@ -481,18 +488,26 @@ Transformers remain more data-hungry but become competitive once image width and
 | ResNet18-V1          | 26 M | 57.37 % | 0.115 | 0.221 | 0.331 | 190 |
 | ViT-6H               | 34 M | 17.96 % | 0.419 | 0.657 | 0.793 | 115 |
 
+**Highlights**
 
-**Key take-aways**
+* **CRNN‑Final** delivers the **lowest Character Error Rate (6.72 %)** and the **highest word‑level accuracies** at every edit‑distance threshold, while retaining the fastest inference speed (~250 fps).  
+* **ResNet18‑V2** slashes its V1 CER to **8.62 %**, narrowing the gap with CRNN, **but still trails by 3.4 pp in Word Accuracy @1** and by 0.056 in strict word accuracy.  The gain costs ~30 % extra latency and ~4× parameters.  
+* **ViT‑Tiny Final** reaches a similar CER (**8.77 %**) when the input width is increased to 256 px, yet lags both CRNN and ResNet18 in word accuracies and runs ~1.9× slower than CRNN.
 
-1. **Accuracy vs Speed**  
-   *CRNN-Final* delivers the **lowest CER** and highest word accuracy while maintaining the **fastest inference** (≈ 250 fps).  
-   *ResNet18-V2* trails by ~1.9 pp CER but gains +6 pp Word Acc @1 over CRNN, offering a balanced server-side option.  
-   *ViT-Tiny Final* matches ResNet on character-level accuracy yet remains slower and slightly behind on strict word matches.
+**Key take‑aways**
 
-2. **Model Capacity**  
-   The two transfer-learning backbones (ResNet, ViT) require ≈ 4–5× more parameters than CRNN. Gains plateau once width = 256 px and BiLSTM ≥ 256 hidden.
+1. **Accuracy vs. speed**  
+   *CRNN‑Final* provides the best overall trade‑off: top accuracy (CER and Word Accuracy @0/1/2) at ~250 fps with only 7 M parameters.  
+   *ResNet18‑V2* achieves the second‑best CER (8.62 %) but increases latency by ~30 % and **does not surpass CRNN in Word Accuracy @1**.  
+   *ViT‑Tiny Final* is competitive in CER yet remains behind on word accuracy and runs slower than both CNN‑based models.
 
+2. **Model capacity**  
+   Moving from CRNN to pre‑trained backbones multiplies parameter count by ~4‑5× and inference time by 40‑90  %, with diminishing returns beyond a 256 px input width.
 
+3. **Practical recommendation**  
+   • **CRNN‑Final** – default choice for real‑time or edge deployments.  
+   • **ResNet18‑V2** – use when GPU resources are available and a standard CNN backbone is preferred.  
+   • **ViT‑Tiny Final** – exploratory option for very long text lines or transformer‑centric research.
 
 ## NATURAL LANGUAGE PROCESSING
 
