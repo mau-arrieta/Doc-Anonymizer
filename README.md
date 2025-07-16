@@ -281,7 +281,7 @@ In the next steps, the focus shifted to exploring different CNN encoders, includ
 ### 4.4.2 Multiple Architectures Under a Common CTC Head
 
 <img width="1039" height="440" alt="image" src="https://github.com/user-attachments/assets/b7e5b82a-f96a-4425-95d7-b0922a356285" />
-Figure 1 (below) summarises the **shared decoding stack** used in all subsequent experiments: the visual backbone (CNN or ViT) feeds a **common sequence head of 2 × Bi‑LSTM + Linear + CTC**.  
+Fig. (above) summarises the **shared decoding stack** used in all subsequent experiments: the visual backbone (CNN or ViT) feeds a **common sequence head of 2 × Bi‑LSTM + Linear + CTC**.  
 
 We evaluate three encoders:
 
@@ -437,7 +437,7 @@ To test non-convolutional feature extractors we replaced the CNN encoder with **
 
 <img width="1285" height="767" alt="image" src="https://github.com/user-attachments/assets/8eff251f-8971-4962-be4e-f13d575f569e" />
 
-*Fig. below confirms the yellow curve (ViT-Tiny Final) overtakes the blue “Freeze” run after epoch 15 and stabilises at ≈0.84 Word Acc @1.*
+*Fig. above confirms the yellow curve (ViT-Tiny Final) overtakes the blue “Freeze” run after epoch 15 and stabilises at ≈0.84 Word Acc @1.*
 
 
 | Run (wandb)        | Image W | Freeze | Augmentation | CER ↓ | Word Acc@0 ↑ | Notes |
