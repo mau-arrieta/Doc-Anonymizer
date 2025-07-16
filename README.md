@@ -546,11 +546,18 @@ There are some other subtleties to take into account, for example, the word "Wil
 
 
 ## BLURRING
+
 The blurring consists in a script that by using the library ImageFilter from PIL it can blur the region selected. In this case, the region is being determined by the coordinates of each point of the bounding boxes. 
 
 This value has been stored in the dictionary that contains the values of the image contained in the bounding boxes resulted from the Computer Vision word detection: the text of the word that appears in the image, the label assigned from Spacy, coordinates of the cropp and the cropped image itself.
 
 To execute the bluring, we iterate for each element in the dictionary and depending on its label assigned from Spacy, we can determine if an element of the dictionary must be blurred or not. The condition consists if the value of the label is "PERSON" (People, including fictional), "DATE" (Absolute or relative dates or periods), "LOC" (Non-GPE locations, mountain ranges, bodies of water), "GPE" (Countries, cities, states) or "NORP" (Nationalities or religious or political groups).
+
+### Results
+
+After obtaining the dictionary, this function is able to introduce the blurring on the original image and be able to blur the positions of where the words have been detected and anonymize it correctly.
+
+![Alt text](https://github.com/mau-arrieta/Doc-Anonymizer/blob/main/doc-images/blurring-output.jpeg)
 
 ## HOW TO RUN
 
