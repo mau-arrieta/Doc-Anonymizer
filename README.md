@@ -50,7 +50,9 @@ We expect that a pre-trained detection model can be fine-tuned for our use case,
 Furthermore, the module is designed with a Faster R-CNN based model for out text detection task, as its two-stage design (region proposal + classification) makes it especially strong at precise localization, which is critical for detecting small, tightly packed word regions that simpler one-stage detectors often miss.
 
 
-### 3.2. Dataset
+### 3.2 Experiment
+
+### 3.2.1 Dataset
 
 The dataset used for the word-box detection task is the [DocBank dataset](https://doc-analysis.github.io/docbank-page/). It was originally designed for textual and document layout tasks, and the version used for this project consists of 500K document pages, along with their corresponging annotations.
 
@@ -79,7 +81,7 @@ We also tried to filter the annotations by keeping the annotations that we neede
 
 The whole dataset was approximately 50gb, our model used 2.4% of it for fine-tuning due to storage constraints the team worked with. Our final version was fine-tuned with a total of 12k document images, with a 80-10-10 data partition for training,validation and testing, in that order.
 
-### 3.3. Architecture
+### 3.2.2 Architecture
 
 Our implemented architecture is based on the Faster R-CNN framework for object detection, which integrates three main components:
 
@@ -89,10 +91,10 @@ Our implemented architecture is based on the Faster R-CNN framework for object d
 
 3. **ROI Heads (Classifier + Regressor)**. The top N proposals from the RPN are then processed by ROI Pooling/ROI Align which consists on crops + resizes each proposed region from the feature map to a fixed size (e.g., 7x7). A series of fully connected layers (MLP) predict: Class scores (multi-class softmax over our labels like "title", "paragraph", "figure", etc) and bounding box refinements for each predicted class.
 
-#### 3.3.1 How it all connects
+#### 3.2.2.1 How it all connects
 ![Alt text](https://github.com/mau-arrieta/Doc-Anonymizer/blob/main/doc-images/rcnn-schema.png)
 
-#### 3.3.2 Architectural decisions & customitzation
+#### 3.2.2.2 Architectural decisions & customitzation
 We chose ResNet-18 as the backbone because it's lightweight, ensuring faster training and inference, which this key point is critical taking into consideration the high-resolution nature of document images. 
 
 Previously we tried to train it with a backbone of ResNet-50 and the performance leaved much to desire in comparisson to this model. With the same amount of data ResNet-18 outperformed ResNet-50 on this use case. To be able to determine it, we trained with both backbones and saw a significant difference in the losses on each backbone version.
@@ -100,7 +102,7 @@ Previously we tried to train it with a backbone of ResNet-50 and the performance
 On both we used a pretrained backbone on ImageNet, so it would accelerate the training process by leveraging features learned on large datasets. Then we fine-tuned all layers (not frozen), so the network could adapt to the low-level features (edge cases) to document-specific patterns.
 
 
-#### 3.3.3 RPN & ROI customization
+#### 3.2.2.3 RPN & ROI customization
 Since document layouts vary so much in element size and shape, it's critical that the RPN anchors cover multiple scales and aspect ratios, so that small lines of text and large table can both be proposed. The ROI heads, on another hand, can accurately classify each region into our document-specific categories and refine the bounding boxes for pixel-level alignment. 
 
 We customized the anchor sizes of the RPN so it ensures that this head covers very small to very large object, which affects over our dataset since in documents there are tiny author names or equations and large tables or figures. Also, the aspect ratios have been customized so each scale supports tall, square, and wide objects.
@@ -110,7 +112,9 @@ We have increased proposals (rpn_pre_nms_top_n_train, rpn_post_nms_top_n_train, 
 We used MultiScaleRoIAlign on 4 levels, which combines different feature map scales to handle multi-sized objects.
 
 
-### 3.4. Metrics
+### 3.3. Results
+
+### 3.3.1 Metrics
 
 Faster R-CNN breaks the text detection problem into two stages: finding possible text regions and classifying them. The losses reflect each of these tasks — whether it's finding a text region at all (train_loss_objectness), correctly identifying it as text (train_loss_classifier), or drawing the box in the right place (train_loss_box_reg). Together, these make up the total training loss, helping us monitor how well the model is learning to detect text.
 
@@ -133,7 +137,7 @@ We decided to collect the metric data directly on the test evaluation and not du
 Over the iterations with the backbone of ResNet-50, we couldn't store any metric since the model wasn't performing correctly and wasn't able to collect this data.
 
 
-### 3.5. Results on an inference
+### 3.3.2 Results on an inference
 
 Runnning inference on the test portion of the dataset, it's possible to visually examine the results of the model. 
 
@@ -147,7 +151,7 @@ The  bounding boxes are marked in red, and there are 109 of the total 200 predic
 <img width="615" height="510" alt="image" src="https://github.com/user-attachments/assets/473d95f1-a19b-4244-90a9-01573b001b73" />
 
 
-### 3.6. Conclusions
+### 3.4. Conclusions
 
 In this module of the project, we explored the effectiveness of fine-tuning a pre-trained Faster R-CNN model for word-level text detection in document images. Despite using only a small portion of the full dataset, the model successfully learned to identify and localize word regions with a high degree of confidence, even in visually dense and varied layouts.
 
