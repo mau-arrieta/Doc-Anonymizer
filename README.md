@@ -281,6 +281,7 @@ In the next steps, the focus shifted to exploring different CNN encoders, includ
 ### 4.4.2 Multiple Architectures Under a Common CTC Head
 
 <img width="1039" height="440" alt="image" src="https://github.com/user-attachments/assets/b7e5b82a-f96a-4425-95d7-b0922a356285" />
+
 Fig. (above) summarises the **shared decoding stack** used in all subsequent experiments: the visual backbone (CNN or ViT) feeds a **common sequence head of 2 × Bi‑LSTM + Linear + CTC**.  
 
 We evaluate three encoders:
@@ -289,9 +290,9 @@ We evaluate three encoders:
 * **ResNet‑18** – ImageNet‑pretrained CNN with final stride = 1.  
 * **ViT‑Tiny Patch16** – ImageNet‑pretrained Vision Transformer.
 
-Reproducible notebook path: /model-baklog/OCR_crnn_resnet18_vit_tiny.ipynb
+**Reproducible notebook path:** /model-baklog/OCR_crnn_resnet18_vit_tiny.ipynb
 
-Experiments database (22k sample @Synth90k): https://drive.google.com/drive/folders/1KUnCBEJOfbnoZyeaO0-5YeqP4szKyW1f?usp=sharing
+**Experiments database (22k sample @Synth90k):** https://drive.google.com/drive/folders/1KUnCBEJOfbnoZyeaO0-5YeqP4szKyW1f?usp=sharing
 
 ### Why **CRNN → ResNet-18 → ViT-Tiny** were chosen
 
