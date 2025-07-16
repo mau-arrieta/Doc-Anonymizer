@@ -280,6 +280,8 @@ In the next steps, the focus shifted to exploring different CNN encoders, includ
 
 ### 4.4.2  Multiple Arquitecture-CTC
 
+<img width="1039" height="440" alt="image" src="https://github.com/user-attachments/assets/b7e5b82a-f96a-4425-95d7-b0922a356285" />
+
 Reproducible notebook path: /model-baklog/OCR_crnn_resnet18_vit_tiny.ipynb
 
 Experiments database (22k sample @Synth90k): https://drive.google.com/drive/folders/1KUnCBEJOfbnoZyeaO0-5YeqP4szKyW1f?usp=sharing
@@ -291,9 +293,8 @@ Experiments database (22k sample @Synth90k): https://drive.google.com/drive/fold
 | **Recurrent-CNN baseline** | **CRNN-Final** (5-conv CNN + 2 × BiLSTM)            | *Historical anchor.*<br>• Pure “from-scratch” training shows what the 22 k subset alone can achieve.<br>• Still compact (≈ **7 M** params incl. BiLSTM) and fastest in inference.                                                                                 | *lab_mlp_cnn* → conv blocks<br>*lab_rnn* → Bi-LSTM sequencing |
 | **Transfer-learning CNN**  | **ResNet18-V2** (pre-trained, unfrozen)             | *Strong classical baseline.*<br>• ImageNet features match local stroke patterns.<br>• Moderately sized (≈ **26 M** params incl. BiLSTM 384).                                                                                                                     | *lab_transfer_learning* (freeze/unfreeze)<br>*lab_contrastive* (powerful encoders) |
 | **Vision Transformer**     | **ViT-Tiny Patch16** (pre-trained)                  | *Modern research variant.*<br>• Self-attention captures long-range glyph relations.<br>• Patch-wise tokens feed naturally into CTC.<br>• ViT-Tiny keeps memory reasonable (≈ **30 M** params incl. BiLSTM).                                                      | *NLP Transformer labs* (pos-embedding tricks) |
-<sub>Parameter counts include the 2 × BiLSTM head and classification layer for fairness across families.</sub>
 
-<img width="1039" height="440" alt="image" src="https://github.com/user-attachments/assets/b7e5b82a-f96a-4425-95d7-b0922a356285" />
+<sub>Parameter counts include the 2 × BiLSTM head and classification layer for fairness across families.</sub>
 
 _We retained the CRNN baseline for continuity and did two deliberate upgrades:_
 
