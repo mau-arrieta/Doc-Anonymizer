@@ -278,7 +278,7 @@ In the next steps, the focus shifted to exploring different CNN encoders, includ
 - Lightweight models like TinyCNN, and
 - More advanced alternatives like Transformer-based encoders, to evaluate how the choice of visual feature extractor impacts OCR performance.
 
-### 4.4.2 Multiple Architectures Under a Common CTC Head
+### 4.4.2 Multiple Architectures Under a Common CTC Head
 
 <img width="1039" height="440" alt="image" src="https://github.com/user-attachments/assets/b7e5b82a-f96a-4425-95d7-b0922a356285" />
 Figure 1 (below) summarises the **shared decoding stack** used in all subsequent experiments: the visual backbone (CNN or ViT) feeds a **common sequence head of 2 × Bi‑LSTM + Linear + CTC**.  
@@ -504,10 +504,18 @@ Transformers remain more data-hungry but become competitive once image width and
 2. **Model capacity**  
    Moving from CRNN to pre‑trained backbones multiplies parameter count by ~4‑5× and inference time by 40‑90  %, with diminishing returns beyond a 256 px input width.
 
-3. **Practical recommendation**  
-   • **CRNN‑Final** – default choice for real‑time or edge deployments.  
-   • **ResNet18‑V2** – use when GPU resources are available and a standard CNN backbone is preferred.  
-   • **ViT‑Tiny Final** – exploratory option for very long text lines or transformer‑centric research.
+## 4.5  Final Conclusions: OCR Module
+
+**CRNN remains the reference model.** Across all experiments, the *CRNN-Final* configuration (5-conv CNN, 2×BiLSTM-256, CTC) achieved the **lowest Character Error Rate (6.72 %)** and the **highest Word Accuracy at all edit-distance thresholds**, while delivering the **fastest single-image inference (~250 fps, BS=1)** and the smallest parameter footprint (~7 M). For production systems—especially latency- or memory-constrained deployments—this is the recommended default.
+
+**Heavier pretrained encoders narrow CER but not the lead in word accuracy.**  
+*ResNet18-V2* (stride-1, ImageNet weights, BiLSTM-384) reduces CER to 8.62 % but **does not surpass CRNN on Word Acc @1** (0.846 vs 0.880) and incurs ~30 % slower inference with ~4× parameters.  
+*ViT-Tiny Final* achieves a similar CER (8.77 %) when width is increased to 256 px but trails in strict word accuracy and adds further latency.
+
+**Input width is a major lever.** Expanding image width increases the effective time-steps presented to the recurrent head (or attention/CTC alignment), yielding large CER drops across all backbones (e.g., CRNN 15.2 % → 6.7 % when 128 px → 192 px; ViT 17.9 % → 8.8 % when 128 px → 256 px). Budgeting horizontal resolution is more impactful than adding depth once a competent encoder is in place.
+
+**Augmentation & regularisation matter.** Elastic-distortion (“MAP”) style augmentation and modest dropout (~0.20 on LSTM outputs) consistently reduced over-fitting to the synthetic domain and improved word accuracy.
+
 
 ## NATURAL LANGUAGE PROCESSING
 
