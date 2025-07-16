@@ -233,9 +233,10 @@ The model is trained using Connectionist Temporal Classification (CTC) loss, whi
 This architecture has proven to be robust and stable, providing consistently good results in the experiments.
 
 <img width="372" height="434" alt="image" src="https://github.com/user-attachments/assets/21788728-13cf-477d-af72-7d2892e538b1" />
-https://arxiv.org/pdf/1507.05717
-<br>
 
+https://arxiv.org/pdf/1507.05717
+
+<br>
 <img width="352,5" height="417" alt="image" src="https://github.com/user-attachments/assets/ec7d4139-db18-466b-a5ce-e24451f44659" />
 
 
